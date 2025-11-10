@@ -6,18 +6,27 @@
   <title>Hiragana Clock</title>
   <style>
     :root{--bg:#0f1724;--card:#0b1220;--accent:#60a5fa;--muted:#94a3b8}
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,\"Noto Sans JP\",\"Hiragino Kaku Gothic ProN\",sans-serif;background:linear-gradient(180deg,var(--bg),#071025);color:#e6eef8}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,\"Noto Sans JP\",\"Hiragino Kaku Gothic ProN\",sans-serif;background:linear-gradient(180deg,var(--bg),#071025);color:#e6eef8;overflow:hidden}
     .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
-    .card{background:linear-gradient(180deg,var(--card),#07101a);padding:36px;border-radius:16px;box-shadow:0 10px 30px rgba(2,6,23,0.6);text-align:center;width:100%;max-width:420px}
-    .clock{font-size:96px;line-height:0.9;font-weight:700;letter-spacing:0.01em}
-    .minutes{font-size:48px;margin-top:10px;opacity:0.95}
-    .meta{margin-top:18px;color:var(--muted);display:flex;gap:12px;align-items:center;justify-content:center}
-    .meta label{font-size:14px}
-    .controls{display:flex;gap:8px}
+    .card{background:linear-gradient(180deg,var(--card),#07101a);padding:36px;border-radius:16px;box-shadow:0 10px 30px rgba(2,6,23,0.6);text-align:center;width:100%;max-width:420px;position:relative}
+    .clock{font-size:110px;line-height:0.9;font-weight:700;letter-spacing:0.01em}
+    .minutes{font-size:58px;margin-top:10px;opacity:0.95}
+    .meta{margin-top:18px;color:var(--muted);text-align:left}
+    .meta summary{cursor:pointer;list-style:none;font-size:14px;color:var(--muted)}
+    .meta summary::marker{display:none}
+    .meta details{margin-top:10px}
+    .controls{display:flex;flex-direction:column;gap:8px;padding-top:8px}
     .btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;color:inherit;cursor:pointer}
-    .small{font-size:12px;color:var(--muted)}
+    .small{font-size:13px;color:var(--muted)}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    @media (max-width:480px){.clock{font-size:64px}.minutes{font-size:36px}}
+
+    @media (max-width:480px){
+      .card{padding:20px;box-shadow:none;background:transparent}
+      .clock{font-size:140px}
+      .minutes{font-size:80px;margin-top:16px}
+      details{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);width:auto;text-align:center}
+      summary{color:var(--muted);opacity:0.8;font-size:12px}
+    }
   </style>
 </head>
 <body>
@@ -27,7 +36,8 @@
       <div id="hour" class="clock">れい</div>
       <div id="minute" class="minutes">れい</div>
 
-      <div class="meta" role="region" aria-label="Settings">
+      <details class="meta">
+        <summary>⚙️ Settings</summary>
         <div class="controls">
           <label class="small">
             <input id="toggle24" type="checkbox" /> 24-hour
@@ -36,31 +46,21 @@
             <input id="withCounters" type="checkbox" /> show じ / ふん
           </label>
           <button id="copyBtn" class="btn small">Copy as text</button>
+          <p class="small" style="margin-top:8px">This page converts the current time into hiragana words and updates in real time.</p>
         </div>
-      </div>
-
-      <p class="small" style="margin-top:12px">This page converts the current time into hiragana words and updates in real time.</p>
+      </details>
     </section>
   </main>
 
   <script>
-    // Mapping for 0-9
-    const digits = {
-      0: 'れい', 1: 'いち', 2: 'に', 3: 'さん', 4: 'よん', 5: 'ご',
-      6: 'ろく', 7: 'なな', 8: 'はち', 9: 'きゅう'
-    };
-
-    // Helper for tens (10, 20, 30, 40, 50)
-    const tensWord = {
-      10: 'じゅう', 20: 'にじゅう', 30: 'さんじゅう', 40: 'よんじゅう', 50: 'ごじゅう'
-    };
+    const digits = {0:'れい',1:'いち',2:'に',3:'さん',4:'よん',5:'ご',6:'ろく',7:'なな',8:'はち',9:'きゅう'};
+    const tensWord = {10:'じゅう',20:'にじゅう',30:'さんじゅう',40:'よんじゅう',50:'ごじゅう'};
 
     function numberToHiragana(n){
       n = Number(n);
       if (Number.isNaN(n) || n < 0) return '';
       if (n <= 9) return digits[n];
       if (n <= 19){
-        // 10..19: じゅう + unit (except 10)
         if (n === 10) return 'じゅう';
         return 'じゅう' + digits[n - 10];
       }
@@ -70,7 +70,6 @@
         const tensPart = tensWord[tens] || (digits[Math.floor(n/10)] + 'じゅう');
         return unit === 0 ? tensPart : tensPart + digits[unit];
       }
-      // fallback for >=60: build generally
       const parts = [];
       let remainder = n;
       if (remainder >= 100){
@@ -82,42 +81,29 @@
       return parts.join('');
     }
 
-    // Special handling for hours in 12-hour mode: 0 -> 12
     function displayTime(){
       const now = new Date();
       const use24 = document.getElementById('toggle24').checked;
       let hours = now.getHours();
       const minutes = now.getMinutes();
-
       let hourForDisplay = hours;
       if (!use24) {
-        // 12-hour clock: convert 0 -> 12
         hourForDisplay = hours % 12;
         if (hourForDisplay === 0) hourForDisplay = 12;
       }
-
       const withCounters = document.getElementById('withCounters').checked;
-
       const hourText = numberToHiragana(hourForDisplay) || 'れい';
       const minuteText = numberToHiragana(minutes) || 'れい';
-
       const hourEl = document.getElementById('hour');
       const minuteEl = document.getElementById('minute');
-
       hourEl.textContent = withCounters ? (hourText + 'じ') : hourText;
       minuteEl.textContent = withCounters ? (minuteText + 'ふん') : minuteText;
-
-      // set title/tooltip and aria-label
       document.title = `Time — ${hourForDisplay}:${String(minutes).padStart(2,'0')}`;
-      hourEl.setAttribute('aria-label', `Hour: ${hourForDisplay}`);
-      minuteEl.setAttribute('aria-label', `Minutes: ${minutes}`);
     }
 
-    // initial render and interval
     displayTime();
     setInterval(displayTime, 1000);
 
-    // Copy as text button
     document.getElementById('copyBtn').addEventListener('click', async ()=>{
       const hour = document.getElementById('hour').textContent;
       const minute = document.getElementById('minute').textContent;
@@ -131,10 +117,8 @@
       }
     });
 
-    // keyboard accessible toggles: update immediately on change
     document.getElementById('toggle24').addEventListener('change', displayTime);
     document.getElementById('withCounters').addEventListener('change', displayTime);
-
   </script>
 </body>
 </html>
