@@ -1,5 +1,21 @@
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#60a5fa">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ひらがな時計">
+{
+  "name": "ひらがな時計",
+  "short_name": "時計",
+  "description": "A simple web app that shows the current time in Hiragana.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1724",
+  "theme_color": "#60a5fa",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
